@@ -206,15 +206,14 @@ sub vcl_recv {
   set req.http.Govuk-Use-Recommended-Related-Links = "true";
 
   
+  # Remove querystrings from Eat Out To Help Out page
+  if (req.url.path ~ "(?i)^(/guidance/get-a-discount-with-the-eat-out-to-help-out-scheme)") {
+    set req.url = std.tolower(req.url.path);
+  }
 
   # Save original request url because req.url changes after restarts.
   if (req.restarts < 1) {
     set req.http.original-url = req.url;
-  }
-
-  # Remove querystrings from Eat Out To Help Out page
-  if (req.url.path ~ "(?i)^(/guidance/get-a-discount-with-the-eat-out-to-help-out-scheme)") {
-    set req.url = std.tolower(req.url.path);
   }
 
   # Common config when failover to mirror buckets

@@ -103,7 +103,10 @@ sub vcl_recv {
   # as a rollback mechanism should we ever need to stop showing these links.
   set req.http.Govuk-Use-Recommended-Related-Links = "true";
 
-  
+  # Remove querystrings from Eat Out To Help Out page
+  if (req.url.path ~ "(?i)^(/guidance/get-a-discount-with-the-eat-out-to-help-out-scheme)") {
+    set req.url = std.tolower(req.url.path);
+  }
 
   # Unspoofable original client address.
   set req.http.True-Client-IP = req.http.Fastly-Client-IP;
