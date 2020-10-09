@@ -260,35 +260,35 @@ if (req.http.Cookie ~ "cookies_policy") {
         }
       }
     }
-    if (table.lookup(active_ab_tests, "TransitionUrgency1") == "true") {
+    if (table.lookup(active_ab_tests, "TransitionUrgency2") == "true") {
       if (req.http.User-Agent ~ "^GOV\.UK Crawler Worker") {
-        set req.http.GOVUK-ABTest-TransitionUrgency1 = "A";
-      } else if (req.url ~ "[\?\&]ABTest-TransitionUrgency1=A(&|$)") {
+        set req.http.GOVUK-ABTest-TransitionUrgency2 = "A";
+      } else if (req.url ~ "[\?\&]ABTest-TransitionUrgency2=A(&|$)") {
         # Some users, such as remote testers, will be given a URL with a query string
         # to place them into a specific bucket.
-        set req.http.GOVUK-ABTest-TransitionUrgency1 = "A";
-      } else if (req.url ~ "[\?\&]ABTest-TransitionUrgency1=B(&|$)") {
+        set req.http.GOVUK-ABTest-TransitionUrgency2 = "A";
+      } else if (req.url ~ "[\?\&]ABTest-TransitionUrgency2=B(&|$)") {
         # Some users, such as remote testers, will be given a URL with a query string
         # to place them into a specific bucket.
-        set req.http.GOVUK-ABTest-TransitionUrgency1 = "B";
-      } else if (req.http.Cookie ~ "ABTest-TransitionUrgency1") {
+        set req.http.GOVUK-ABTest-TransitionUrgency2 = "B";
+      } else if (req.http.Cookie ~ "ABTest-TransitionUrgency2") {
         # Set the value of the header to whatever decision was previously made
-        set req.http.GOVUK-ABTest-TransitionUrgency1 = req.http.Cookie:ABTest-TransitionUrgency1;
+        set req.http.GOVUK-ABTest-TransitionUrgency2 = req.http.Cookie:ABTest-TransitionUrgency2;
       } else {
-        declare local var.denominator_TransitionUrgency1 INTEGER;
-        declare local var.denominator_TransitionUrgency1_A INTEGER;
-        declare local var.nominator_TransitionUrgency1_A INTEGER;
-        set var.nominator_TransitionUrgency1_A = std.atoi(table.lookup(transitionurgency1_percentages, "A"));
-        set var.denominator_TransitionUrgency1 += var.nominator_TransitionUrgency1_A;
-        declare local var.denominator_TransitionUrgency1_B INTEGER;
-        declare local var.nominator_TransitionUrgency1_B INTEGER;
-        set var.nominator_TransitionUrgency1_B = std.atoi(table.lookup(transitionurgency1_percentages, "B"));
-        set var.denominator_TransitionUrgency1 += var.nominator_TransitionUrgency1_B;
-        set var.denominator_TransitionUrgency1_A = var.denominator_TransitionUrgency1;
-        if (randombool(var.nominator_TransitionUrgency1_A, var.denominator_TransitionUrgency1_A)) {
-          set req.http.GOVUK-ABTest-TransitionUrgency1 = "A";
+        declare local var.denominator_TransitionUrgency2 INTEGER;
+        declare local var.denominator_TransitionUrgency2_A INTEGER;
+        declare local var.nominator_TransitionUrgency2_A INTEGER;
+        set var.nominator_TransitionUrgency2_A = std.atoi(table.lookup(transitionurgency2_percentages, "A"));
+        set var.denominator_TransitionUrgency2 += var.nominator_TransitionUrgency2_A;
+        declare local var.denominator_TransitionUrgency2_B INTEGER;
+        declare local var.nominator_TransitionUrgency2_B INTEGER;
+        set var.nominator_TransitionUrgency2_B = std.atoi(table.lookup(transitionurgency2_percentages, "B"));
+        set var.denominator_TransitionUrgency2 += var.nominator_TransitionUrgency2_B;
+        set var.denominator_TransitionUrgency2_A = var.denominator_TransitionUrgency2;
+        if (randombool(var.nominator_TransitionUrgency2_A, var.denominator_TransitionUrgency2_A)) {
+          set req.http.GOVUK-ABTest-TransitionUrgency2 = "A";
         } else {
-          set req.http.GOVUK-ABTest-TransitionUrgency1 = "B";
+          set req.http.GOVUK-ABTest-TransitionUrgency2 = "B";
         }
       }
     }
@@ -409,10 +409,10 @@ sub vcl_deliver {
   }
   if (req.http.Cookie ~ "cookies_policy") {
     if (req.http.Cookie:cookies_policy ~ "%22usage%22:true") {
-      if (table.lookup(active_ab_tests, "TransitionUrgency1") == "true") {
-        if (req.http.Cookie !~ "ABTest-TransitionUrgency1" || req.url ~ "[\?\&]ABTest-TransitionUrgency1" && req.http.User-Agent !~ "^GOV\.UK Crawler Worker") {
-          set var.expiry = time.add(now, std.integer2time(std.atoi(table.lookup(ab_test_expiries, "TransitionUrgency1"))));
-          add resp.http.Set-Cookie = "ABTest-TransitionUrgency1=" req.http.GOVUK-ABTest-TransitionUrgency1 "; secure; expires=" var.expiry "; path=/";
+      if (table.lookup(active_ab_tests, "TransitionUrgency2") == "true") {
+        if (req.http.Cookie !~ "ABTest-TransitionUrgency2" || req.url ~ "[\?\&]ABTest-TransitionUrgency2" && req.http.User-Agent !~ "^GOV\.UK Crawler Worker") {
+          set var.expiry = time.add(now, std.integer2time(std.atoi(table.lookup(ab_test_expiries, "TransitionUrgency2"))));
+          add resp.http.Set-Cookie = "ABTest-TransitionUrgency2=" req.http.GOVUK-ABTest-TransitionUrgency2 "; secure; expires=" var.expiry "; path=/";
         }
       }
     }
