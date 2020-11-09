@@ -421,39 +421,6 @@ sub vcl_miss {
 }
 
 sub vcl_deliver {
-  # Set the A/B cookies
-  # Only set the A/B example cookie if the request is to the A/B test page. This
-  # ensures that most visitors to the site aren't assigned an irrelevant test
-  # cookie.
-  if (req.url ~ "^/help/ab-testing"
-    && req.http.User-Agent !~ "^GOV\.UK Crawler Worker"
-    && req.http.Cookie !~ "ABTest-Example") {
-    # Set a fairly short cookie expiry because this is just an A/B test demo.
-    add resp.http.Set-Cookie = "ABTest-Example=" req.http.GOVUK-ABTest-Example "; secure; expires=" now + 1d;
-  }
-
-  # Begin dynamic section
-<% if ab_tests -%>
-  declare local var.expiry TIME;
-<% ab_tests.each do |test_config| -%>
-<% test_config.each do |test, _| -%>
-<% unless test == "Example" -%>
-  if (req.http.Cookie ~ "cookies_policy") {
-    if (req.http.Cookie:cookies_policy ~ "%22usage%22:true") {
-      if (table.lookup(active_ab_tests, "<%= test %>") == "true") {
-        if (req.http.Cookie !~ "ABTest-<%= test %>" || req.url ~ "[\?\&]ABTest-<%= test %>" && req.http.User-Agent !~ "^GOV\.UK Crawler Worker") {
-          set var.expiry = time.add(now, std.integer2time(std.atoi(table.lookup(ab_test_expiries, "<%= test %>"))));
-          add resp.http.Set-Cookie = "ABTest-<%= test %>=" req.http.GOVUK-ABTest-<%= test %> "; secure; expires=" var.expiry "; path=/";
-        }
-      }
-    }
-  }
-<% end # unless -%>
-<% end # test_config.each -%>
-<% end # ab_tests.each -%>
-<% end # if -%>
-  # End dynamic section
-
 #FASTLY deliver
 }
 

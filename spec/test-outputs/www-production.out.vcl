@@ -282,73 +282,75 @@ sub vcl_recv {
   }
 
     # Begin dynamic section
-if (req.http.Cookie ~ "cookies_policy") {
-  if (req.http.Cookie:cookies_policy ~ "%22usage%22:true") {
-    if (table.lookup(active_ab_tests, "Example") == "true") {
-      if (req.http.User-Agent ~ "^GOV\.UK Crawler Worker") {
-        set req.http.GOVUK-ABTest-Example = "A";
-      } else if (req.url ~ "[\?\&]ABTest-Example=A(&|$)") {
-        # Some users, such as remote testers, will be given a URL with a query string
-        # to place them into a specific bucket.
-        set req.http.GOVUK-ABTest-Example = "A";
-      } else if (req.url ~ "[\?\&]ABTest-Example=B(&|$)") {
-        # Some users, such as remote testers, will be given a URL with a query string
-        # to place them into a specific bucket.
-        set req.http.GOVUK-ABTest-Example = "B";
-      } else if (req.http.Cookie ~ "ABTest-Example") {
-        # Set the value of the header to whatever decision was previously made
-        set req.http.GOVUK-ABTest-Example = req.http.Cookie:ABTest-Example;
-      } else {
-        declare local var.denominator_Example INTEGER;
-        declare local var.denominator_Example_A INTEGER;
-        declare local var.nominator_Example_A INTEGER;
-        set var.nominator_Example_A = std.atoi(table.lookup(example_percentages, "A"));
-        set var.denominator_Example += var.nominator_Example_A;
-        declare local var.denominator_Example_B INTEGER;
-        declare local var.nominator_Example_B INTEGER;
-        set var.nominator_Example_B = std.atoi(table.lookup(example_percentages, "B"));
-        set var.denominator_Example += var.nominator_Example_B;
-        set var.denominator_Example_A = var.denominator_Example;
-        if (randombool(var.nominator_Example_A, var.denominator_Example_A)) {
-          set req.http.GOVUK-ABTest-Example = "A";
-        } else {
-          set req.http.GOVUK-ABTest-Example = "B";
-        }
-      }
-    }
-    if (table.lookup(active_ab_tests, "TransitionUrgency5") == "true") {
-      if (req.http.User-Agent ~ "^GOV\.UK Crawler Worker") {
-        set req.http.GOVUK-ABTest-TransitionUrgency5 = "A";
-      } else if (req.url ~ "[\?\&]ABTest-TransitionUrgency5=A(&|$)") {
-        # Some users, such as remote testers, will be given a URL with a query string
-        # to place them into a specific bucket.
-        set req.http.GOVUK-ABTest-TransitionUrgency5 = "A";
-      } else if (req.url ~ "[\?\&]ABTest-TransitionUrgency5=B(&|$)") {
-        # Some users, such as remote testers, will be given a URL with a query string
-        # to place them into a specific bucket.
-        set req.http.GOVUK-ABTest-TransitionUrgency5 = "B";
-      } else if (req.http.Cookie ~ "ABTest-TransitionUrgency5") {
-        # Set the value of the header to whatever decision was previously made
-        set req.http.GOVUK-ABTest-TransitionUrgency5 = req.http.Cookie:ABTest-TransitionUrgency5;
-      } else {
-        declare local var.denominator_TransitionUrgency5 INTEGER;
-        declare local var.denominator_TransitionUrgency5_A INTEGER;
-        declare local var.nominator_TransitionUrgency5_A INTEGER;
-        set var.nominator_TransitionUrgency5_A = std.atoi(table.lookup(transitionurgency5_percentages, "A"));
-        set var.denominator_TransitionUrgency5 += var.nominator_TransitionUrgency5_A;
-        declare local var.denominator_TransitionUrgency5_B INTEGER;
-        declare local var.nominator_TransitionUrgency5_B INTEGER;
-        set var.nominator_TransitionUrgency5_B = std.atoi(table.lookup(transitionurgency5_percentages, "B"));
-        set var.denominator_TransitionUrgency5 += var.nominator_TransitionUrgency5_B;
-        set var.denominator_TransitionUrgency5_A = var.denominator_TransitionUrgency5;
-        if (randombool(var.nominator_TransitionUrgency5_A, var.denominator_TransitionUrgency5_A)) {
-          set req.http.GOVUK-ABTest-TransitionUrgency5 = "A";
-        } else {
-          set req.http.GOVUK-ABTest-TransitionUrgency5 = "B";
-        }
-      }
-    }
-  }
+if (table.lookup(active_ab_tests, "Example") == "true") {
+	if (req.http.User-Agent ~ "^GOV\.UK Crawler Worker") {
+		set req.http.GOVUK-ABTest-Example = "A";
+	} else if (req.url ~ "[\?\&]ABTest-Example=A(&|$)") {
+		# Some users, such as remote testers, will be given a URL with a query string
+		# to place them into a specific bucket.
+		set req.http.GOVUK-ABTest-Example = "A";
+	} else if (req.url ~ "[\?\&]ABTest-Example=B(&|$)") {
+		# Some users, such as remote testers, will be given a URL with a query string
+		# to place them into a specific bucket.
+		set req.http.GOVUK-ABTest-Example = "B";
+	} else if (req.http.Cookie ~ "ABTest-Example") {
+		# Set the value of the header to whatever decision was previously made
+		set req.http.GOVUK-ABTest-Example = req.http.Cookie:ABTest-Example;
+	} else {
+		declare local var.denominator_Example INTEGER;
+		set req.http.X-ClientIDHash = digest.hash_md5(client.ip req.http.User-Agent);
+		set req.http.X-ClientIDHash-trimmed = regsub(req.http.X-ClientIDHash, "^([a-fA-F0-9]{10}).*$","\1");
+		set req.http.X-ClientID = std.strtol(req.http.X-ClientIDHash-trimmed, 16);
+		declare local var.denominator_Example_A INTEGER;
+		declare local var.nominator_Example_A INTEGER;
+		set var.nominator_Example_A = std.atoi(table.lookup(example_percentages, "A"));
+		set var.denominator_Example += var.nominator_Example_A;
+		declare local var.denominator_Example_B INTEGER;
+		declare local var.nominator_Example_B INTEGER;
+		set var.nominator_Example_B = std.atoi(table.lookup(example_percentages, "B"));
+		set var.denominator_Example += var.nominator_Example_B;
+		set var.denominator_Example_A = var.denominator_Example;
+		if (randombool_seeded(var.nominator_Example_A, var.denominator_Example_A, std.atoi(req.http.X-ClientID))) {
+			set req.http.GOVUK-ABTest-Example = "A";
+		} else {
+			set req.http.GOVUK-ABTest-Example = "B";
+		}
+	}
+}
+if (table.lookup(active_ab_tests, "TransitionUrgency5") == "true") {
+	if (req.http.User-Agent ~ "^GOV\.UK Crawler Worker") {
+		set req.http.GOVUK-ABTest-TransitionUrgency5 = "A";
+	} else if (req.url ~ "[\?\&]ABTest-TransitionUrgency5=A(&|$)") {
+		# Some users, such as remote testers, will be given a URL with a query string
+		# to place them into a specific bucket.
+		set req.http.GOVUK-ABTest-TransitionUrgency5 = "A";
+	} else if (req.url ~ "[\?\&]ABTest-TransitionUrgency5=B(&|$)") {
+		# Some users, such as remote testers, will be given a URL with a query string
+		# to place them into a specific bucket.
+		set req.http.GOVUK-ABTest-TransitionUrgency5 = "B";
+	} else if (req.http.Cookie ~ "ABTest-TransitionUrgency5") {
+		# Set the value of the header to whatever decision was previously made
+		set req.http.GOVUK-ABTest-TransitionUrgency5 = req.http.Cookie:ABTest-TransitionUrgency5;
+	} else {
+		declare local var.denominator_TransitionUrgency5 INTEGER;
+		set req.http.X-ClientIDHash = digest.hash_md5(client.ip req.http.User-Agent);
+		set req.http.X-ClientIDHash-trimmed = regsub(req.http.X-ClientIDHash, "^([a-fA-F0-9]{10}).*$","\1");
+		set req.http.X-ClientID = std.strtol(req.http.X-ClientIDHash-trimmed, 16);
+		declare local var.denominator_TransitionUrgency5_A INTEGER;
+		declare local var.nominator_TransitionUrgency5_A INTEGER;
+		set var.nominator_TransitionUrgency5_A = std.atoi(table.lookup(transitionurgency5_percentages, "A"));
+		set var.denominator_TransitionUrgency5 += var.nominator_TransitionUrgency5_A;
+		declare local var.denominator_TransitionUrgency5_B INTEGER;
+		declare local var.nominator_TransitionUrgency5_B INTEGER;
+		set var.nominator_TransitionUrgency5_B = std.atoi(table.lookup(transitionurgency5_percentages, "B"));
+		set var.denominator_TransitionUrgency5 += var.nominator_TransitionUrgency5_B;
+		set var.denominator_TransitionUrgency5_A = var.denominator_TransitionUrgency5;
+		if (randombool_seeded(var.nominator_TransitionUrgency5_A, var.denominator_TransitionUrgency5_A, std.atoi(req.http.X-ClientID))) {
+			set req.http.GOVUK-ABTest-TransitionUrgency5 = "A";
+		} else {
+			set req.http.GOVUK-ABTest-TransitionUrgency5 = "B";
+		}
+	}
 }
 # End dynamic section
 
@@ -440,31 +442,6 @@ sub vcl_miss {
 }
 
 sub vcl_deliver {
-  # Set the A/B cookies
-  # Only set the A/B example cookie if the request is to the A/B test page. This
-  # ensures that most visitors to the site aren't assigned an irrelevant test
-  # cookie.
-  if (req.url ~ "^/help/ab-testing"
-    && req.http.User-Agent !~ "^GOV\.UK Crawler Worker"
-    && req.http.Cookie !~ "ABTest-Example") {
-    # Set a fairly short cookie expiry because this is just an A/B test demo.
-    add resp.http.Set-Cookie = "ABTest-Example=" req.http.GOVUK-ABTest-Example "; secure; expires=" now + 1d;
-  }
-
-  # Begin dynamic section
-  declare local var.expiry TIME;
-  if (req.http.Cookie ~ "cookies_policy") {
-    if (req.http.Cookie:cookies_policy ~ "%22usage%22:true") {
-      if (table.lookup(active_ab_tests, "TransitionUrgency5") == "true") {
-        if (req.http.Cookie !~ "ABTest-TransitionUrgency5" || req.url ~ "[\?\&]ABTest-TransitionUrgency5" && req.http.User-Agent !~ "^GOV\.UK Crawler Worker") {
-          set var.expiry = time.add(now, std.integer2time(std.atoi(table.lookup(ab_test_expiries, "TransitionUrgency5"))));
-          add resp.http.Set-Cookie = "ABTest-TransitionUrgency5=" req.http.GOVUK-ABTest-TransitionUrgency5 "; secure; expires=" var.expiry "; path=/";
-        }
-      }
-    }
-  }
-  # End dynamic section
-
 #FASTLY deliver
 }
 

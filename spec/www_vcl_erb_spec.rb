@@ -26,11 +26,6 @@ RSpec.describe "VCL template" do
     expect(subject).to include(%(set req.http.GOVUK-ABTest-ATest = \"meh\";))
   end
 
-  it "renders the expiry statements" do
-    statement = %(set var.expiry = time.add(now, std.integer2time(std.atoi(table.lookup(ab_test_expiries, "ATest"))));)
-    expect(subject).to include(statement)
-  end
-
   it "doesn't set a cookie for the 'Example' test" do
     expect(subject).not_to include(%(add resp.http.Set-Cookie = "ABTest-<%= test %>=))
   end
@@ -55,6 +50,10 @@ describe "AB Tests partial" do
 
   it "renders ab test output for each test in the configuration" do
     expect(subject).to eq(expected)
+  end
+
+  it "doesn't set a cookie for the test" do
+    expect(subject).not_to include(%(add resp.http.Set-Cookie = "ABTest-))
   end
 end
 
